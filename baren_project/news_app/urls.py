@@ -15,11 +15,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
+from . import views
+
+
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    # news_app 관련 url은 news/ 로 통일
-    path('news/', include('news_app.urls')),
+    # news/search/ - 이건 views의 search_news로 보내짐/ 뉴스 검색 페이지
+    path("search/", views.search_news, name='search_news'),
+
 ]
