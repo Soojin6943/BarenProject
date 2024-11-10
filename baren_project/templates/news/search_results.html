@@ -11,6 +11,7 @@
         {% for news in news_list %}
             <li>
                 <a href="#" class="news-link" data-url="{{ news.originallink }}">{{ news.title|safe }}</a>
+                <p><strong>본문:</strong>{{ news.content|safe }}</p>
             </li>
         {% endfor %}
     </ul>
