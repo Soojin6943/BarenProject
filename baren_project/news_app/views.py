@@ -12,9 +12,15 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import time # 크롤링 딜레이를 위한 모듈
 
+# 로그인 / 회원가입 파트
+from django.contrib.auth.models import User
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+
 load_dotenv()
 
-# Create your views here.
 
 # 본문 크롤링 ---------------------------------------------
 # 개별 뉴스 url에서 본문을 크롤링하는 함수
@@ -46,7 +52,7 @@ def crawl_news_content(url):
             # 네이버 뉴스 본문 영역 선택자
             content = soup.select_one('#dic_area')
             if content:
-                # HTML 태그 제거하고 순수 텍스트만 추출
+                # HTML 태그 제거하고 순수 텍스트만 추출!!!!!!!!!!!!
                 return content.get_text().strip()
             else:
                 print(f"본문 영역을 찾을 수 없습니다: {url}")
@@ -177,3 +183,35 @@ def search_news(request):
         
         
     return render(request, 'news/search_form.html')
+
+# ==========================================================
+# =========================================================
+#            로그인 / 회원가입
+# ===========================================================
+# ==========================================================
+
+@api_view(['POST'])
+def signup(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    
+    if not username or not password:
+        return Response({'error': 'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        user = User.objects.create_user(username=username, password=password)
+        user.save()
+        return Response({'message': 'User created successfully'}, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['POST'])
+def logout(request):
+    try:
+        refresh_token = request.data["refresh_token"]
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        return Response(status=status.HTTP_205_RESET_CONTENT)
+    except Exception as e:
+        return Response(status=status.HTTP_400_BAD_REQUEST)

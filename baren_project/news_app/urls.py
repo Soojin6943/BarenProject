@@ -20,8 +20,14 @@ from . import views
 
 
 
+
 urlpatterns = [
+    # 로그인/회원가입
+    path('signup/', views.signup, name='signup'),
+    # path('logout/', views.logout, name='logout'),
+    
     # news/search/ - 이건 views의 search_news로 보내짐/ 뉴스 검색 페이지
     path("search/", views.search_news, name='search_news'),
+
 
 ]

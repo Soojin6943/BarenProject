@@ -17,9 +17,17 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+# TokenObtainRairView = 액세스 및 리프레시 토큰 발급
+# TokenRefreshView = 리프레시 토큰으로 새로운 액세스 토큰 발급
+from rest_framework_simplejwt.views import ( TokenObtainPairView, TokenRefreshView)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    
+    # JWT 기반 로그인/회원가입
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
     # news_app 관련 url은 news/ 로 통일
     path('news/', include('news_app.urls')),
 ]

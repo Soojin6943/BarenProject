@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from datetime import timedelta
 
 load_dotenv()
 
@@ -33,7 +34,9 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "news_app",
-    # "news_api"
+    # "news_api",
+    "rest_framework_simplejwt.token_blacklist", # JWT 블랙리스트 관리
+    
 ]
 
 MIDDLEWARE = [
@@ -103,6 +106,22 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+# JWT 인증 기반 로그인 / 회원가입
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': # 액세스 토큰 만료 시간
+        timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': # 리프레시 토큰 만료 시간
+        timedelta(days=1), 
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+}
 
 
 # Internationalization
