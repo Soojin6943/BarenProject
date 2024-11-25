@@ -1,6 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from dotenv import load_dotenv
 from django.http import JsonResponse
+from django.contrib import messages
 
 # 네이버 api 호출 파트
 import os
@@ -19,11 +20,14 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 
+# 로그인 성공 후 리다이렉션 처리
+from rest_framework_simplejwt.views import TokenObtainPairView
+
 load_dotenv()
 
 
 # 본문 크롤링 ---------------------------------------------
-# 개별 뉴스 url에서 본문을 크롤링하는 함수
+# 특정 뉴스 url에서 본문을 크롤링하는 함수
 def crawl_news_content(url):
     # Args: 
     #     url (str): 크롤링할 뉴스 기사의 url
@@ -71,6 +75,14 @@ def crawl_news_content(url):
  
 # 검색 결과 데이터프레임의 모든 기사에 대해 본문을 크롤링하여 추가하는 함수   
 def crawl_news_data(search_results_df, delay=1):
+    """
+    검색 결과 DataFrame의 모든 기사에 대해 본문을 크롤링하여 추가하는 함수.
+    Args:
+        search_results_df (DataFrame): 검색 결과 데이터프레임.
+        delay (int): 각 요청 간의 대기 시간 (초).
+    Returns:
+        DataFrame: 본문 내용이 추가된 데이터프레임.
+    """
     # 본문 저장할 새로운 컬럼
     search_results_df['content'] = None
     
@@ -90,7 +102,7 @@ def crawl_news_data(search_results_df, delay=1):
             content = crawl_news_content(url)
         
             if content:
-                # 크롤링 성공 시 데이터프레임에 저장
+                # 크롤링 성공 시 데이터프레임에 본문 저장
                 search_results_df.at[idx, 'content'] = content
                 print(f"성공: {row['title']}")
             else:
@@ -106,7 +118,9 @@ def crawl_news_data(search_results_df, delay=1):
     
     
 
-# 네이버 api 호출------------------------------------------
+# ==========================================================
+#  네이버 뉴스 API 호출 함수들
+# ==========================================================
 
 # 네이버 api 키 가져오기 (.env 파일에 있음)
 NAVER_CLIENT_ID = os.getenv('NAVER_CLIENT_ID')
@@ -114,9 +128,13 @@ NAVER_CLIENT_SECRET = os.getenv('NAVER_CLIENT_SECRET')
 
 # 네이버 api 함수
 def search_naver_news(query):
-    '''
-    
-    '''
+    """
+    네이버 뉴스 API를 호출하여 검색 결과를 가져오는 함수.
+    Args:
+        query (str): 검색 키워드.
+    Returns:
+        DataFrame: 검색 결과를 포함한 데이터프레임.
+    """
     # 기본 요청 url (뒤에 헤더랑 필요 요청 매개변수 붙어야함)
     url = "https://openapi.naver.com/v1/search/news.json"
     # 헤더
@@ -161,7 +179,9 @@ def search_naver_news(query):
         return pd.DataFrame() # 빈 DataFrame 반환
     
     
-#-----------------------------------------------------------
+# ==========================================================
+#  검색창 관련 뷰 함수들
+# ==========================================================
 
 # 검색창 관련 함수 (검색값 입력 및 결과 리턴)
 def search_news(request):
@@ -181,7 +201,6 @@ def search_news(request):
             news_list = results_with_content.to_dict('records')
             return render(request, 'news/search_results.html', {'news_list': news_list})
         
-        
     return render(request, 'news/search_form.html')
 
 # ==========================================================
@@ -190,24 +209,16 @@ def search_news(request):
 # ===========================================================
 # ==========================================================
 
-@api_view(['POST'])
-def signup(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-    
-    if not username or not password:
-        return Response({'error': 'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    try:
-        user = User.objects.create_user(username=username, password=password)
-        user.save()
-        return Response({'message': 'User created successfully'}, status=status.HTTP_201_CREATED)
-
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['POST'])
 def logout(request):
+    """
+    사용자 로그아웃 뷰 (JWT 블랙리스트 추가).
+    Args:
+        request: Django 요청 객체.
+    Returns:
+        Response: 로그아웃 처리 상태 반환.
+    """
     try:
         refresh_token = request.data["refresh_token"]
         token = RefreshToken(refresh_token)
@@ -215,3 +226,61 @@ def logout(request):
         return Response(status=status.HTTP_205_RESET_CONTENT)
     except Exception as e:
         return Response(status=status.HTTP_400_BAD_REQUEST)
+    
+    
+# ==========================================================
+#  로그인/ 로그아웃 페이지 렌더링
+# ==========================================================
+
+# 로그인 시 리디렉션
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, *kwargs)
+        # JWT 토큰 가져오기
+        if response.status_code == 200:
+            access = response.data.get("access")
+            refresh = response.data.get("refresh")
+            # 토큰을 세션에 저장하거나 다른 작업 수행 가능
+            request.session['access'] = access
+            request.session['refresh'] = refresh
+            return redirect('search_news') # 리디렉션
+        return response
+
+def login_page(request):
+    """
+    로그인 페이지를 렌더링하는 뷰
+    """
+    return render (request, 'news/login.html')
+
+def logout_page(request):
+    """
+    로그아웃 페이지를 렌더링하는 뷰
+    """
+    return render(request, 'news/logout.html')
+        
+        
+def signup_view(request):
+    """
+    회원가입 페이지와 사용자 생성 로직 처리
+    """
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        if not username or not password:
+            messages.error(request, "아이디와 비밀번호를 입력하세요.")
+            return redirect('signup')
+        
+        try:
+            # 새로운 사용자 생성
+            user = User.objects.create_user(username=username, password=password)
+            user.save()
+            messages.success(request, "회원가입이 완료되었습니다.")
+            return redirect('login_page')
+        
+        except Exception as e:
+            messages.error(request, "회원가입 중 오류가 발생했습니다.")
+            return redirect('signup')
+    
+    # GET 요청 처리: 회원가입 폼 렌더링
+    return render(request, 'news/signup.html')

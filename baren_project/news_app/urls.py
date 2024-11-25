@@ -22,12 +22,21 @@ from . import views
 
 
 urlpatterns = [
-    # 로그인/회원가입
-    path('signup/', views.signup, name='signup'),
-    # path('logout/', views.logout, name='logout'),
+
+    # 로그인 페이지
+    path('login/', views.login_page, name='login_page'),
+    # 로그아웃 페이지
+    path('logout/', views.logout_page, name='logout_page'),
+    
+    # 회원가입
+    path("signup/", views.signup_view, name='signup'),
+    
+    # 로그인 성공 시 리디렉션
+    path('api/token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     
     # news/search/ - 이건 views의 search_news로 보내짐/ 뉴스 검색 페이지
     path("search/", views.search_news, name='search_news'),
 
+    
 
 ]
