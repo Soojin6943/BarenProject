@@ -32,11 +32,16 @@ urlpatterns = [
     path("signup/", views.signup_view, name='signup'),
     
     # 로그인 성공 시 리디렉션
-    path('api/token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('login/token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     
     # news/search/ - 이건 views의 search_news로 보내짐/ 뉴스 검색 페이지
     path("search/", views.search_news, name='search_news'),
 
+    # 분석 기록용
+    # path('history/', views.user_history, name='user_history'),
+    
+    # 즐겨찾기
+    path('favorite/<int:article_id>/', views.toggle_favorite, name='toggle_favorite'),
     
 
 ]

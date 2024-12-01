@@ -11,7 +11,14 @@
         {% for news in news_list %}
             <li>
                 <a href="#" class="news-link" data-url="{{ news.originallink }}">{{ news.title|safe }}</a>
-                <p><strong>본문:</strong>{{ news.content|safe }}</p>
+                <p><strong>본문:</strong>{{ news.content }}</p>
+                <p>
+                    {% if news.id in user_favorites %}
+                    <button data-id="{{ news.id }}" class="remove-favorite">Remove Favorite</button>
+                    {% else %}
+                    <button data-id="{{ news.id}}" class="add-favorite">Add to Favorite</button>
+                    {% endif %}
+                </p>
             </li>
         {% endfor %}
     </ul>

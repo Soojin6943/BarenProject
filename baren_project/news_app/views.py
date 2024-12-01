@@ -23,6 +23,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 # 로그인 성공 후 리다이렉션 처리
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+# 크롤링 데이터를 저장하는 로직에 활용
+from .models import Article
+
+# 즐겨찾기 관련
+from django.contrib.auth.decorators import login_required
+from .models import Favorite, Article
+
 load_dotenv()
 
 
@@ -116,7 +123,38 @@ def crawl_news_data(search_results_df, delay=1):
     return search_results_df
     
     
+# 크롤링 한 데이터 저장
+def save_article(title, content, url, clickbait_score, tags, published_date):
+    try:
+        article, created = Article.objects.get_or_create(
+            url=url,
+            defaults={
+                'title': title,
+                'content': content,
+                'clickbait_score': clickbait_score,
+                'tags': tags,
+                'published_date': published_date,
+            }
+        )
+        return article, created
+    except Exception as e:
+        return None, False
     
+
+# 즐겨찾기 추가 / 삭제
+@login_required
+def toggle_favorite(request, article_id):
+    user = request.user
+    try:
+        article = Article.objects.get(pk=article_id)
+    except Article.DoesNotExist:
+        return JsonResponse({"error": "Article not found"}, status=404)
+
+    favorite, created = Favorite.objects.get_or_create(user=user, article=article)
+    if not created:
+        favorite.delete()
+        return JsonResponse({"message": "Favorite removed"})
+    return JsonResponse({"message": "Favorite added"})
 
 # ==========================================================
 #  네이버 뉴스 API 호출 함수들

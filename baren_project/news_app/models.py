@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth.models import User
 
 # Create your models here.
 
@@ -18,12 +19,16 @@ class Article(models.Model):
     published_date = models.DateTimeField()
     # 낚시성 점수
     clickbait_score = models.IntegerField(
-        default=0,
+        default=0.0,
         validators=[
-            MinValueValidator(0),
-            MaxValueValidator(100)
+            MinValueValidator(0.0),
+            MaxValueValidator(100.0)
         ]
     )
+    # 분석 요약 (예: "낚시성 표현 발견", "과장된 제목")
+    analysis_summary = models.TextField(null=True, blank=True)
+    # 관련 태그
+    tags = models.CharField(max_length=255, null=True, blank=True)
     # db 생성 시간 (자동으로 현재 시간 저장)
     created_at = models.DateTimeField(default=timezone.now)
     
@@ -31,8 +36,31 @@ class Article(models.Model):
     def __str__(self):
         return self.title
     
+    # def search_by_tag(tag):
+    #     return Article.objects.filter(tags__icontains=tag)
+    
     class Meta:
         # 테이블 이름 지정 (선택사항)
         db_table = 'articles'
         # 정렬 순서 지정 (최신 기사가 먼저 나오도록)
         ordering = ['-published_date']
+        
+class UserNewsHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    analyzed_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.article.title}"
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    favorited_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'article')  # 중복 즐겨찾기 방지
+
+    def __str__(self):
+        return f"{self.user.username} - {self.article.title}"
