@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>검색 결과</title>
+</head>
+<body>
+    <h1>검색 결과</h1>
+    <ul>
+        {% for news in news_list %}
+            <li>
+                <a href="#" class="news-link" data-url="{{ news.originallink }}">{{ news.title|safe }}</a>
+                <p><strong>본문:</strong>{{ news.content }}</p>
+                <p>
+                    {% if news.id in user_favorites %}
+                    <button data-id="{{ news.id }}" class="remove-favorite">Remove Favorite</button>
+                    {% else %}
+                    <button data-id="{{ news.id}}" class="add-favorite">Add to Favorite</button>
+                    {% endif %}
+                </p>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div id="newsContent"></div>
+
+    <!-- ????????????????????????? -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('.news-link').click(function(e) {
+            e.preventDefault();
+            var url = $(this).data('url');
+            // 여기에 뉴스 내용을 가져오는 AJAX 요청을 추가할 수 있습니다.
+            // 예: $.ajax({ ... })
+        });
+    });
+    </script>
+</body>
+</html>
